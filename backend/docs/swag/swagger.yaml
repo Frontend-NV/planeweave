@@ -1,0 +1,725 @@
+basePath: /
+definitions:
+  github_com_planeweave_planeweave_internal_domain.AuthResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/github_com_planeweave_planeweave_internal_domain.User'
+    type: object
+  github_com_planeweave_planeweave_internal_domain.Dependency:
+    properties:
+      fromTaskId:
+        type: string
+      id:
+        type: string
+      projectId:
+        type: string
+      toTaskId:
+        type: string
+    type: object
+  github_com_planeweave_planeweave_internal_domain.Project:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: string
+      ownerId:
+        type: string
+      title:
+        type: string
+    type: object
+  github_com_planeweave_planeweave_internal_domain.ProjectMember:
+    properties:
+      displayName:
+        type: string
+      email:
+        type: string
+      role:
+        type: string
+      userId:
+        type: string
+    type: object
+  github_com_planeweave_planeweave_internal_domain.Task:
+    properties:
+      assigneeId:
+        type: string
+      id:
+        type: string
+      projectId:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      updatedAt:
+        type: string
+      x:
+        type: number
+      "y":
+        type: number
+    type: object
+  github_com_planeweave_planeweave_internal_domain.User:
+    properties:
+      displayName:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+    type: object
+  internal_handler.ErrorResponse:
+    properties:
+      error:
+        example: invalid_request
+        type: string
+    type: object
+  internal_handler.InviteResponse:
+    properties:
+      expiresAt:
+        type: string
+      token:
+        example: a1b2c3
+        type: string
+    type: object
+  internal_handler.createDependencyRequest:
+    properties:
+      fromTaskId:
+        example: uuid-from
+        type: string
+      toTaskId:
+        example: uuid-to
+        type: string
+    type: object
+  internal_handler.createTaskRequest:
+    properties:
+      assigneeId:
+        type: string
+      status:
+        example: todo
+        type: string
+      title:
+        example: Задача A
+        type: string
+      x:
+        example: 100
+        type: number
+      "y":
+        example: 100
+        type: number
+    type: object
+  internal_handler.loginRequest:
+    properties:
+      email:
+        example: student@test.com
+        type: string
+      password:
+        example: password1
+        type: string
+    type: object
+  internal_handler.patchTaskRequest:
+    properties:
+      assigneeId:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      x:
+        type: number
+      "y":
+        type: number
+    type: object
+  internal_handler.registerRequest:
+    properties:
+      displayName:
+        example: Студент
+        type: string
+      email:
+        example: student@test.com
+        type: string
+      password:
+        example: password1
+        type: string
+    type: object
+  internal_handler.titleRequest:
+    properties:
+      title:
+        example: Мой проект
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: |-
+    REST API командной доски задач с графом зависимостей.
+    WebSocket (синхронизация): см. backend/docs/websocket.md
+  title: Planeweave API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Учётные данные
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_planeweave_planeweave_internal_domain.AuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Вход
+      tags:
+      - auth
+  /auth/me:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_planeweave_planeweave_internal_domain.User'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Текущий пользователь
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные регистрации
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.registerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_planeweave_planeweave_internal_domain.AuthResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      summary: Регистрация
+      tags:
+      - auth
+  /dependencies/{dependencyId}:
+    delete:
+      parameters:
+      - description: ID зависимости
+        in: path
+        name: dependencyId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удалить зависимость
+      tags:
+      - dependencies
+  /health:
+    get:
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+      summary: Проверка health
+      tags:
+      - system
+  /invites/{token}/accept:
+    post:
+      parameters:
+      - description: Токен приглашения
+        in: path
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_planeweave_planeweave_internal_domain.Project'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Принять приглашение
+      tags:
+      - invites
+  /projects:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_planeweave_planeweave_internal_domain.Project'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Список проектов
+      tags:
+      - projects
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Название
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.titleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_planeweave_planeweave_internal_domain.Project'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создать проект
+      tags:
+      - projects
+  /projects/{projectId}:
+    delete:
+      parameters:
+      - description: ID проекта
+        in: path
+        name: projectId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удалить проект
+      tags:
+      - projects
+    get:
+      parameters:
+      - description: ID проекта
+        in: path
+        name: projectId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_planeweave_planeweave_internal_domain.Project'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить проект
+      tags:
+      - projects
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID проекта
+        in: path
+        name: projectId
+        required: true
+        type: string
+      - description: Название
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.titleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_planeweave_planeweave_internal_domain.Project'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Переименовать проект
+      tags:
+      - projects
+  /projects/{projectId}/dependencies:
+    get:
+      parameters:
+      - description: ID проекта
+        in: path
+        name: projectId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_planeweave_planeweave_internal_domain.Dependency'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Список зависимостей
+      tags:
+      - dependencies
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID проекта
+        in: path
+        name: projectId
+        required: true
+        type: string
+      - description: from блокирует to
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.createDependencyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_planeweave_planeweave_internal_domain.Dependency'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создать зависимость
+      tags:
+      - dependencies
+  /projects/{projectId}/invites:
+    post:
+      parameters:
+      - description: ID проекта
+        in: path
+        name: projectId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handler.InviteResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создать приглашение
+      tags:
+      - invites
+  /projects/{projectId}/members:
+    get:
+      parameters:
+      - description: ID проекта
+        in: path
+        name: projectId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_planeweave_planeweave_internal_domain.ProjectMember'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Участники проекта
+      tags:
+      - projects
+  /projects/{projectId}/tasks:
+    get:
+      parameters:
+      - description: ID проекта
+        in: path
+        name: projectId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_planeweave_planeweave_internal_domain.Task'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Список задач
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID проекта
+        in: path
+        name: projectId
+        required: true
+        type: string
+      - description: Задача
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.createTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_planeweave_planeweave_internal_domain.Task'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создать задачу
+      tags:
+      - tasks
+  /tasks/{taskId}:
+    delete:
+      parameters:
+      - description: ID задачи
+        in: path
+        name: taskId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удалить задачу
+      tags:
+      - tasks
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID задачи
+        in: path
+        name: taskId
+        required: true
+        type: string
+      - description: Поля для изменения
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.patchTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_planeweave_planeweave_internal_domain.Task'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Изменить задачу
+      tags:
+      - tasks
+securityDefinitions:
+  BearerAuth:
+    description: 'JWT-токен: `Bearer <token>`'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
