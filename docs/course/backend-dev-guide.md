@@ -12,6 +12,7 @@
 | [`backend/api/openapi.json`](../../backend/api/openapi.json) | OpenAPI JSON (генерируется из кода, `make swag`) |
 | [`backend/docs/websocket.md`](../../backend/docs/websocket.md) | синхронизация в реальном времени |
 | [`product-brief.md`](product-brief.md) | суть продукта (для ТЗ на неделе 1) |
+| [`tz-template.md`](tz-template.md) | шаблон ТЗ; образец структуры — [`ВКР ТЗ.pdf`](../examples/ВКР%20ТЗ.pdf) |
 
 Код бекенда (`backend/internal/…`) **можно не читать** — ориентируйтесь на Swagger и этот гайд.
 
